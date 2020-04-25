@@ -1,9 +1,7 @@
 #!/bin/bash
 cp icecast.php /usr/local/cwpsrv/htdocs/resources/admin/modules/
 useradd -m icecast
-cd /home/icecast
-wget http://download.nullsoft.com/shoutcast/tools/sc_serv2_linux_x64-latest.tar.gz
-tar -xzf sc_serv2_linux_x64-latest.tar.gz
+yum -y install icecast
 cat <<'EOF' >> /usr/local/cwpsrv/htdocs/resources/admin/include/3rdparty.php
 <noscript>
 </ul>
