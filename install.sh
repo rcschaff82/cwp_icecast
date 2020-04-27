@@ -1,7 +1,8 @@
 #!/bin/bash
-cp icecast.php /usr/local/cwpsrv/htdocs/resources/admin/modules/
-useradd -m icecast
+\cp -f icecast.php /usr/local/cwpsrv/htdocs/resources/admin/modules/
+#useradd -M icecast
 yum -y install icecast
+\cp -f icecast.temp /usr/share/icecast
 cat <<'EOF' >> /usr/local/cwpsrv/htdocs/resources/admin/include/3rdparty.php
 <noscript>
 </ul>
