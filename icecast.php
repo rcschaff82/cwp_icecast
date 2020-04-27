@@ -180,6 +180,7 @@ EOT;
 
 			if (($se = shell_exec("netstat -paln | grep LISTEN | grep -oP :$port")) != "") {
 				$this->throwError("$port already in use by another application!");
+				return false;
 			} 
 			if (($row = mysqli_fetch_assoc($resp)) > 0){
 				$this->throwError("$port already in use");
