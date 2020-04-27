@@ -6,17 +6,15 @@ if ( !isset( $include_path ) )
 }
 
 
-class shoutcast2 {
-        private $dir = "/home/shoutcast2";
+class IceCast {
+        private $dir = "/home/icecast";
         private $status_s2 = "";
         private $version_s2 = "";
-        private $github_branches= "https://api.github.com/repos/rcschaff82/cwp_2fa/branches";
-        private $github_url = "https://api.github.com/repos/rcschaff82/cwp_2fa/commits?per_page=1&sha=";
-        private $github_branches2 = "https://api.github.com/repos/phalcon/cphalcon/branches";
-        private $github_url2 = "https://api.github.com/repos/phalcon/cphalcon/commits?per_page=1&sha=";
+        private $github_branches= "https://api.github.com/repos/rcschaff82/cwp_icecast/branches";
+        private $github_url = "https://api.github.com/repos/rcschaff82/cwp_icecast/commits?per_page=1&sha=";
         public function __construct()
         {
-                echo '<center><b>Check if ShoutCast2 installed</b></center><br>';
+                echo '<center><b>IceCast Module</b></center><br>';
         }
         public function initalize()
         {
@@ -26,24 +24,29 @@ class shoutcast2 {
         }
         public function get_s2_version()
         {
-                $s2_version = shell_exec("sudo -u shoutcast2 /home/shoutcast2/sc_serv -v");
+                $s2_version = shell_exec("icecast -v");
                 $this->version_s2 = $s2_version;
         }
         public function check_is_s2_loaded()
         {
-                $php = shell_exec("sudo -u shoutcast2 command -v /home/shoutcast2/sc_serv");
-        if ($php) {
+		global $mysql_conn;
+                $sql= "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'icecast';";
+                $resp = mysqli_query($mysql_conn,$sql);
+		$row = mysqli_fetch_array($resp);
+                $php = shell_exec("sudo -u icecast command -v icecast");
+        if ($php && $row[0] == 1) {
                 $this->get_s2_version();
-                $this->alert = "alert-success";
-                $this->message = "<strong>Success!</strong><br>$this->version_s2";
-                $this->toHtml();
-                $this->add_server();
+                //$this->alert = "alert-success";
+                //$this->message = "<strong>Success!</strong><br>$this->version_s2";
+                //$this->toHtml();
+                echo "Version: " . $this->version_s2;
+		$this->add_server();
                 $this->list_server();
         }
         else {
-        $this->alert = "alert-info";
-            $this->message = "<strong>Info!</strong> Shoutcast2 Is not installed.<br>
-            To install the ShoutCast follow the guidelines below, or use the auto install script.";
+           $this->alert = "alert-info";
+            $this->message = "<strong>Info!</strong> IceCast Is not installed.<br>
+            To install the IceCast follow the guidelines below, or use the auto install script.";
 
             //Show Help Installation
             $this->toHtml();
@@ -51,42 +54,50 @@ class shoutcast2 {
         }
         }
         private function list_server() {
+global $mysql_conn;
+$sql="select * from icecast";
+$resp=mysqli_query($mysql_conn,$sql);
+$servers = array();
+while($row = mysqli_fetch_assoc($resp)) {
+$servers[$row['port']] = array("port"=>$row['port'], "user"=>$row['user'],"conf"=>$row['config']);
+}
+
+
 switch(@$_POST['action']) {
 case "srv_start":
 $filer =  @$_POST['srv_id'];
-$cmd = "/home/shoutcast2/$filer.sh";
-exec($cmd);
+$cmd = "/home/{$servers[$filer]['user']}/$filer.conf";
+$temp = shell_exec("sudo -u {$servers[$filer]['user']} /usr/bin/icecast -b -c $cmd");
 echo "Starting";
 sleep(4);
 break;
+
 case "srv_stop":
 $filer =  @$_POST['srv_id'];
 echo "Stoppping<br>";
-$ini_array = parse_ini_file("/home/shoutcast2/$filer");
- $port = $ini_array['portbase'];
-$cmd = "kill `cat /home/shoutcast2/sc_serv_$port.pid`";
+$cmd = "kill `cat /home/{$servers[$filer]['user']}/icecast/$filer.pid`";
 shell_exec($cmd);
 sleep(4);
 break;
+
 case "srv_delete":
 $filer =  @$_POST['srv_id'];
 echo "Deleting";
-$ini_array = parse_ini_file("/home/shoutcast2/$filer");
- $port = $ini_array['portbase'];
-$port2 = intval($port) + 1;
-$cmd = "kill `cat /home/shoutcast2/sc_serv_$port.pid`";
+$port2 = intval($filer) + 1;
+$cmd = "kill `cat /home/{$servers[$filer]['user']}/icecast/$filer.pid`";
 shell_exec($cmd);
 sleep(4);
-unlink("/home/shoutcast2/$filer");
-unlink("/home/shoutcast2/$filer.sh");
+unlink("/home/{$servers[$filer]['user']}/$filer.conf");
 copy("/etc/csf/csf.conf","/etc/csf/csf.conf.bu");
-shell_exec("sed -i 's/,".$port.",".$port2."//g' /etc/csf/csf.conf");
+shell_exec("sed -i 's/,".$filer.",".$port2."//g' /etc/csf/csf.conf");
+mysqli_query($mysql_conn,"DELETE from icecast where port=$filer;");
 break;
 }
                 echo <<<EOS
                 <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: 100%; height: auto;"><div class="table-responsive" style="overflow: hidden; width: 100%; height: auto;"><table class="table table-bordered">
 <thead><tr>
 <th>Server Status</th>
+<th>User Name</th>
 <th>Edit Server</th>
 <th>Start Server</th>
 <th>Stop Server</th>
@@ -96,18 +107,20 @@ break;
 
 <tbody>
 EOS;
-foreach(glob($this->dir.'/*.conf') as $file) {
- $full = $file;
- $base = basename($file);
- $ini_array = parse_ini_file($file);
- $port = $ini_array['portbase'];
- $online = (file_exists($this->dir.'/sc_serv_'.$port.'.pid'))? "checkmark":"close";
+$hostname = get_hostname();
+foreach((array) $servers as $port=>$val) {
+	$user= $val['user'];
+	$full= $val['conf'];
+	$base = basename($full);
+	 $online = (file_exists("/home/$user/icecast/$port.pid"))? "checkmark":"close";
 echo <<<EOS
-                                <tr><td><span title="Status" class="icon12 minia-icon-$online"></span></td><td><a href="index.php?module=file_editor&amp;file=$full">$base</a></td>
-                                <td><form action="" method="post" onsubmit="return confirm('Are you sure you want to start server: $base ?');"><input type="hidden" name="srv_id" value="$base" size="0"><input type="hidden" name="action" size="0" value="srv_start"><div class="form-group"><button type="submit" class="btn btn-success btn-xs">Start</button></div></form></td>
-                                <td><form action="" method="post" onsubmit="return confirm('Are you sure you want to stop server: $base ?');"><input type="hidden" name="srv_id" value="$base" size="0"><input type="hidden" name="action" size="0" value="srv_stop"><div class="form-group"><button type="submit" class="btn btn-warning btn-xs">Stop</button></div></form></td>
-                                <td><div class="form-group"><button type="submit" onclick="location.href='{$_SERVER['SERVER_NAME']}//:$port'" class="btn btn-default btn-xs">Admin Panel</button></div></td>
-                                <td><form action="" method="post" onsubmit="return confirm('Are you sure you want to delete server: $base ?');"><input type="hidden" name="srv_id" value="$base" size="0"><input type="hidden" name="action" size="0" value="srv_delete"><div class="form-group"><button type="submit" class="btn btn-danger btn-xs">Delete</button></div></form></td></tr>
+                                <tr><td><span title="Status" class="icon12 minia-icon-$online"></span></td>
+				<td>$user</td>
+				<td><a href="index.php?module=file_editor&amp;file=$full">$base</a></td>	
+                                <td><form action="" method="post" onsubmit="return confirm('Are you sure you want to start server: $base ?');"><input type="hidden" name="srv_id" value="$port" size="0"><input type="hidden" name="action" size="0" value="srv_start"><div class="form-group"><button type="submit" class="btn btn-success btn-xs">Start</button></div></form></td>
+                                <td><form action="" method="post" onsubmit="return confirm('Are you sure you want to stop server: $base ?');"><input type="hidden" name="srv_id" value="$port" size="0"><input type="hidden" name="action" size="0" value="srv_stop"><div class="form-group"><button type="submit" class="btn btn-warning btn-xs">Stop</button></div></form></td>
+                                <td><div class="form-group"><button type="submit" onclick="location.href='//{$hostname}:$port'" class="btn btn-default btn-xs">Admin Panel</button></div></td>
+                                <td><form action="" method="post" onsubmit="return confirm('Are you sure you want to delete server: $base ?');"><input type="hidden" name="srv_id" value="$port" size="0"><input type="hidden" name="action" size="0" value="srv_delete"><div class="form-group"><button type="submit" class="btn btn-danger btn-xs">Delete</button></div></form></td></tr>
 EOS;
 }
 echo <<<EOS
@@ -120,12 +133,32 @@ EOS;
         }
         ///  Should be done ///   ip -4 addr | grep -oP '(?<=inet\s)\d+(\.\d+){3}'
         private function add_server() {
+		$ips = networking_inet_ips();
+		$selectuser = "<label>UserAcct</label><select name='user'>";
+                global $mysql_conn;
+		$resp=mysqli_query($mysql_conn,"Select `username` FROM `user`");
+                while($row=mysqli_fetch_assoc($resp)) {
+			$selectuser .= "<option value='{$row['username']}'>{$row['username']}</option>";
+                }
+		$selectuser .="</select><br>";
+                $hostname = get_hostname();
+                $selectip = "<label>Src/DstIP</label><select name='ip'><option value='ALL'>ALL</option>";
+                foreach($ips as $ip) {
+                        $nat = (ipv4_manage_is_ip_private( trim($ip)))?"*":"";
+                        $selectip .= "<option value='$ip'>$ip$nat</option>";
+                }
+                $selectip .="</select><br>";
+
 echo <<<EOT
 <form method="post">
 <input type="hidden" name="doadd" value="start">
 <label>Port</label><input type="input" name="port" value="8000"><br>
 <label>DJ Password</label><input type="input" name="pass" value=""><br>
 <label>Admin Pass</label><input type="input" name="admin" value=""><br>
+<label>Max Clients</label><input type="input" name="numclients" value="100"> *Max 100<br>
+<label>Max Sources</label><input type="input" name="sources" value="1"> *Max 3<br>
+{$selectip}
+{$selectuser}
 <button type="submit" name="submit" value="submit">Add a Server</button>
 
 </form>
@@ -137,79 +170,98 @@ EOT;
                         $port2 = $port + 1;
 			$pass = $_POST['pass'];
                         $admin = $_POST['admin'];
+			$clients = $_POST['numclients'];
+			$sources = $_POST['sources'];
+			$ip = $_POST['ip'];
+			$user = $_POST['user'];
+		        global $mysql_conn;
+			$sql= "select * from icecast where port='$port';";
+        	        $resp = mysqli_query($mysql_conn,$sql);
+			if (($row = mysqli_fetch_assoc($resp)) > 0){
+				$this->throwError("$port already in use");
+				return false;
+			} 
+			if ($clients > 100 || $clients == "") {
+				$this->throwError("Invalid number of Clients!");
+				return false;
+			}
+			if ($sources > 3 || $sources == "") {
+				$this->throwError("Invalid number of Sources!");
+                                return false;
+			}
                         if (strlen($admin) < 6 || strlen($pass) < 6) {
-                                $this->alert = "alert-error";
-                                $this->message = "<strong>Error!</strong><br>Passwords must be at least 6 characters!";
-                                $this->toHtml();
+                                $this->throwError("Passwords must be at least 6 characters!");
                                 return false;
                         }
                         if ($admin == $pass) {
-                                $this->alert = "alert-error";
-                                $this->message = "<strong>Error!</strong><br>You cannot use the same password for both DJ and Admin";
-                                $this->toHtml();
+                                $this->throwError("You cannot use the same password for both DJ and Admin");
                                 return false;
                         }
 
                         if ($port % 2 != 0) {
-                                $this->alert = "alert-error";
-                                $this->message = "<strong>Error!</strong><br>$port should only be an even number!";
-                                $this->toHtml();
+                                $this->throwError("$port should only be an even number!");
                                 return false;
 
                         }
-                        if (shell_exec("grep $port /home/shoutcast2/*.conf")) {
-                                $this->alert = "alert-error";
-                                $this->message = "<strong>Error!</strong><br>$port is already in use!";
-                                $this->toHtml();
-                                return false;
-                        }
-                        $input = <<<EOF
-logfile=logs/sc_{$port}.log
-w3clog=logs/sc_w3c_{$port}.log
-banfile=control/sc_serv{$port}.ban
-ripfile=control/sc_serv{$port}.rip
-portbase={$port}
-password={$pass}
-adminpassword={$admin}
-publicserver=always
+$data = file_get_contents("/usr/share/icecast/icecast.temp");
+$data = str_replace("{{hostname}}",$hostname, $data);
+$data = str_replace("{{numclients}}",$clients, $data);
+$data = str_replace("{{sources}}",$sources, $data);
+$data = str_replace("{{srcpass}}",$pass, $data);
+$data = str_replace("{{admpass}}",$admin, $data);
+$data = str_replace("{{port}}",$port, $data);
+$data = str_replace("{{user}}",$user, $data);
+if ($ip != "ALL") {
+   $data = str_replace("{{bindaddr}}","<bind-address>$ip</bind-address>",$data);
+} else {
+   $data = str_replace("{{bindaddr}}","",$data);
+}
 
-EOF;
-$input2 = <<<EOF
-#!/bin/bash
-sudo -u shoutcast2 /home/shoutcast2/sc_serv daemon /home/shoutcast2/$port.conf > /dev/null 2>/dev/null &
-EOF;
-                file_put_contents("/home/shoutcast2/$port.conf",$input);
-                file_put_contents("/home/shoutcast2/$port.conf.sh",$input2);
-                chown("/home/shoutcast2/$port.conf","shoutcast2");
-                chown("/home/shoutcast2/$port.conf.sh","shoutcast2");
-                chgrp("/home/shoutcast2/$port.conf","shoutcast2");
-                chgrp("/home/shoutcast2/$port.conf.sh","shoutcast2");
-                chmod("/home/shoutcast2/$port.conf.sh",0755);
+file_put_contents("/home/$user/$port.conf",$data);
+@mkdir("/home/$user/icecast",0700);
+chown("/home/$user/icecast", $user);
+chgrp("/home/$user/icecast", $user);
+chown("/home/$user/$port.conf", $user);
+chgrp("/home/$user/$port.conf", $user);
+$sql = "insert into icecast (user, port, config) values ('$user', '$port', '/home/$user/$port.conf')";
+mysqli_query($mysql_conn, $sql);
+
                 copy("/etc/csf/csf.conf","/etc/csf/csf.conf.bu");
 		shell_exec('sed -i -re "s@TCP_IN(.*)(\")@TCP_IN\1,'.$port.','.$port2.'\2@" /etc/csf/csf.conf');
 		shell_exec('sed -i -re "s@TCP_OUT(.*)(\")@TCP_OUT\1,'.$port.','.$port2.'\2@" /etc/csf/csf.conf');
 		shell_exec('sed -i -re "s@TCP6_IN(.*)(\")@TCP6_IN\1,'.$port.','.$port2.'\2@" /etc/csf/csf.conf');
 		shell_exec('sed -i -re "s@TCP6_OUT(.*)(\")@TCP6_OUT\1,'.$port.','.$port2.'\2@" /etc/csf/csf.conf');
-		
 		}
         }
+
+
+/////  Completed   ////
         private function message_install()
         {
         echo <<<EOD
         <form method="post">
         <input type="hidden" name="install" value="start">
-        <button type="submit" name="submit" value="submit">Install Shoutcast2</button>
+        <button type="submit" name="submit" value="submit">Install IceCast</button>
         </form>
 
 EOD;
          if(@$_POST['install'] == 'start') {
-                 shell_exec("useradd -m shoutcast2");
-                shell_exec("cd /home/shoutcast2 && wget http://download.nullsoft.com/shoutcast/tools/sc_serv2_linux_x64-latest.tar.gz && tar -xzf sc_serv2_linux_x64-latest.tar.gz && chown -R shoutcast2:shoutcast2 *");
+                 shell_exec("useradd -M icecast");
+                shell_exec("yum -y install icecast");
+		global $mysql_conn;
+		$sql= "CREATE TABLE icecast (user VARCHAR(20), port VARCHAR(20), config TEXT);";
+		$resp = mysqli_query($mysql_conn,$sql);
                 echo "Please refresh the module";
         }
 
         }
-
+	public function throwError($error="") 
+	{
+			echo '<div class="alert alert-error" style="background-color:#ff6257; max-width:400px">
+                                <a class="close" data-dismiss="alert">×</a>
+                                <strong>Error</strong><br>'.$error.'
+                               </div>';
+	}
         public function toHtml()
         {
                         echo '<div class="alert '.$this->alert.'">
@@ -217,7 +269,7 @@ EOD;
                                 '.$this->message.'
                                </div>';
         }
-
+//////    Nothing below this line is used   ///////
         public function date_last_commit()
         {
                 $context = stream_context_create(array(
@@ -263,7 +315,7 @@ EOD;
                 $this->message_install();
                 } else {
                 echo '<div class="btn-group">
-                      <form action="index.php?module=shoutcast2" method="POST">
+                      <form action="index.php?module=icecast" method="POST">
                           <input type="hidden" name="update" value="start">
                           <button class="btn btn-warning">Show Update Instruction</button>
                       </form>
@@ -275,6 +327,6 @@ EOD;
 
 }
 
-$shoutcast = new shoutcast2();
-$shoutcast->initalize();
+$icecast = new IceCast();
+$icecast->initalize();
 ?>
