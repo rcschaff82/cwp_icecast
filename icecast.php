@@ -177,6 +177,10 @@ EOT;
 		        global $mysql_conn;
 			$sql= "select * from icecast where port='$port';";
         	        $resp = mysqli_query($mysql_conn,$sql);
+
+			if (($se = shell_exec("netstat -paln | grep LISTEN | grep -oP :$port")) != "") {
+				$this->throwError("$port already in use by another application!");
+			} 
 			if (($row = mysqli_fetch_assoc($resp)) > 0){
 				$this->throwError("$port already in use");
 				return false;
