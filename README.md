@@ -17,10 +17,9 @@ You should now have a new menu on the right side of the CWP Admin area called Ic
 
 Change Log
 
--Added auto configuration of csf firewall
+-Initial Release
 
 TODO List:
 
-Add option for Multiple IPs (Current listens on all IP's
-
+Add User Panel, so users can modify their configuration
 
