@@ -1,0 +1,87 @@
+<!-- This config file contains a minimal set of configurable parameters,
+     and mostly just contains the things you need to change or are
+     necessary to get Icecast working for most use cases.  We created
+     this for those who got scared away from the rather large and heavily
+     commented icecast.xml.dist file. 
+	 
+	 For more options, please visit http://icecast.org/ 
+-->
+<icecast>
+	<hostname>{{hostname}}</hostname>
+	<http-headers>
+        <header name="Access-Control-Allow-Origin" value="*" />
+    </http-headers>
+	<limits>
+        <clients>{{numclients}}</clients>
+        <sources>{{sources}}</sources>
+        <queue-size>524288</queue-size>
+        <client-timeout>30</client-timeout>
+        <header-timeout>15</header-timeout>
+        <source-timeout>10</source-timeout>
+        <!-- If enabled, this will provide a burst of data when a client
+             first connects, thereby significantly reducing the startup
+             time for listeners that do substantial buffering. However,
+             it also significantly increases latency between the source
+             client and listening client.  For low-latency setups, you
+             might want to disable this. -->
+        <burst-on-connect>1</burst-on-connect>
+        <!-- same as burst-on-connect, but this allows for being more
+             specific on how much to burst. Most people won't need to
+             change from the default 64k. Applies to all mountpoints  -->
+        <burst-size>65535</burst-size>
+    </limits>
+    <authentication>									  
+        <source-password>{{srcpass}}</source-password>											
+        <relay-password>{{srcpass}}</relay-password>												
+        <admin-user>admin</admin-user>
+        <admin-password>{{admpass}}</admin-password>
+    </authentication>
+    <directory>
+        <yp-url-timeout>15</yp-url-timeout>
+        <yp-url>http://dir.xiph.org/cgi-bin/yp-cgi</yp-url>
+    </directory>
+	<listen-socket>
+        <port>{{port}}</port>
+		{{bindaddr}}
+		<!-- <bind-address>127.0.0.1</bind-address> -->
+        <!-- <shoutcast-mount>/stream</shoutcast-mount> -->
+	</listen-socket>
+    <fileserve>1</fileserve>
+    <paths>
+        <logdir>/var/log/icecast</logdir>
+        <webroot>/usr/share/icecast/web</webroot>
+        <adminroot>/usr/share/icecast/admin</adminroot>
+        <alias source="/" destination="/status.xsl"/>
+    </paths>
+    <logging>
+        <accesslog>access.log</accesslog>
+        <errorlog>error.log</errorlog>
+        <loglevel>3</loglevel> <!-- 4 Debug, 3 Info, 2 Warn, 1 Error -->
+    </logging>
+     <!-- Relaying
+         You don't need this if you only have one server.
+         Please refer to the documentation for a detailed explanation.
+    -->
+    <!--<master-server>127.0.0.1</master-server>-->
+    <!--<master-server-port>8001</master-server-port>-->
+    <!--<master-update-interval>120</master-update-interval>-->
+    <!--<master-password>hackme</master-password>-->
+
+    <!-- setting this makes all relays on-demand unless overridden, this is
+         useful for master relays which do not have <relay> definitions here.
+         The default is 0 -->
+    <!--<relays-on-demand>1</relays-on-demand>-->
+
+    <!--
+    <relay>
+        <server>127.0.0.1</server>
+        <port>8080</port>
+        <mount>/example.ogg</mount>
+        <local-mount>/different.ogg</local-mount>
+        <on-demand>0</on-demand>
+
+        <relay-shoutcast-metadata>0</relay-shoutcast-metadata>
+    </relay>
+    -->
+</icecast>
+
