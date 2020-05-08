@@ -4,6 +4,7 @@
 yum -y install icecast
 \cp -f icecast.temp /usr/share/icecast
 cat <<'EOF' >> /usr/local/cwpsrv/htdocs/resources/admin/include/3rdparty.php
+<!-- cwp_icecast -->
 <noscript>
 </ul>
 <li class="custom-menu"> <!-- this class "custom-menu" was added so you can remove the Developer Menu easily if you want -->
@@ -20,4 +21,5 @@ cat <<'EOF' >> /usr/local/cwpsrv/htdocs/resources/admin/include/3rdparty.php
                 $("li#mn-3").before(newButtons);
         });
 </script>
+<!-- end cwp_icecast -->
 EOF
