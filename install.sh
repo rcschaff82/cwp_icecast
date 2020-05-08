@@ -3,6 +3,9 @@
 #useradd -M icecast
 yum -y install icecast
 \cp -f icecast.temp /usr/share/icecast
+
+if ! grep -q "\-- cwp_icecast --" /usr/local/cwpsrv/htdocs/resources/admin/include/3rdparty.php
+then
 cat <<'EOF' >> /usr/local/cwpsrv/htdocs/resources/admin/include/3rdparty.php
 <!-- cwp_icecast -->
 <noscript>
@@ -23,3 +26,4 @@ cat <<'EOF' >> /usr/local/cwpsrv/htdocs/resources/admin/include/3rdparty.php
 </script>
 <!-- end cwp_icecast -->
 EOF
+fi
