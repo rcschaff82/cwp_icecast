@@ -1,5 +1,6 @@
 #!/bin/bash
 \cp -f icecast.php /usr/local/cwpsrv/htdocs/resources/admin/modules/
+\cp -f update_class.php /usr/local/cwpsrv/htdocs/resources/admin/modules/
 #useradd -M icecast
 yum -y install icecast
 \cp -f icecast.temp /usr/share/icecast

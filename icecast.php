@@ -331,6 +331,14 @@ EOD;
 
 
 }
+try {
+        include_once('update_class.php');
+        $update = new gitupdate('rcschaff82','cwp_dnsreport');
+        $force = (isset($_GET['forceupdate']))?'Y':'N';
+        $update->checkupdate($force);
+} catch (exception $e) {
+        $exception = $e->getMessage();
+}
 
 $icecast = new IceCast();
 $icecast->initalize();
