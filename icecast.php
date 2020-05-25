@@ -333,7 +333,7 @@ EOD;
 }
 try {
         include_once('update_class.php');
-        $update = new gitupdate('rcschaff82','cwp_icecast');
+        $update = new gitupdate('rcschaff82','cwp_icecast','icecast');
         $force = (isset($_GET['forceupdate']))?'Y':'N';
         $update->checkupdate($force);
 } catch (exception $e) {
