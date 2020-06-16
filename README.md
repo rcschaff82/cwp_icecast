@@ -14,7 +14,7 @@ You should now have a new menu on the right side of the CWP Admin area called Ic
 Change Log
 
 -Initial Release
-
+6/16/2020 - Moved Log Directory to local user account
 TODO List:
 
 Add User Panel, so users can modify their configuration

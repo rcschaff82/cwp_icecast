@@ -48,14 +48,14 @@
 	</listen-socket>
     <fileserve>1</fileserve>
     <paths>
-        <logdir>/var/log/icecast</logdir>
+        <logdir>/home/{{user}}/icecast</logdir>
         <webroot>/usr/share/icecast/web</webroot>
         <adminroot>/usr/share/icecast/admin</adminroot>
         <alias source="/" destination="/status.xsl"/>
     </paths>
     <logging>
-        <accesslog>access.log</accesslog>
-        <errorlog>error.log</errorlog>
+        <accesslog>{{port}}access.log</accesslog>
+        <errorlog>{{port}}-error.log</errorlog>
         <loglevel>3</loglevel> <!-- 4 Debug, 3 Info, 2 Warn, 1 Error -->
     </logging>
      <!-- Relaying
