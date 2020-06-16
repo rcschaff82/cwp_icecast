@@ -15,6 +15,8 @@ Change Log
 
 -Initial Release
 6/16/2020 - Moved Log Directory to local user account
+	  - Issue with PID File creation should be corrected
+
 TODO List:
 
 Add User Panel, so users can modify their configuration

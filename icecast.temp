@@ -52,6 +52,7 @@
         <webroot>/usr/share/icecast/web</webroot>
         <adminroot>/usr/share/icecast/admin</adminroot>
         <alias source="/" destination="/status.xsl"/>
+        <pidfile>/home/{{user}}/icecast/{{port}}.pid</pidfile>
     </paths>
     <logging>
         <accesslog>{{port}}access.log</accesslog>
