@@ -8,6 +8,8 @@
 -->
 <icecast>
 	<hostname>{{hostname}}</hostname>
+	<location>earth</location>
+	<admin>root@{{hostname}}</hostname>
 	<http-headers>
         <header name="Access-Control-Allow-Origin" value="*" />
     </http-headers>
